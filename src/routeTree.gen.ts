@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SupportTokenRouteImport } from './routes/support/$token'
 import { Route as ApiCronMissedSessionsRouteImport } from './routes/api/cron/missed-sessions'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportTokenRoute = SupportTokenRouteImport.update({
+  id: '/support/$token',
+  path: '/support/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCronMissedSessionsRoute = ApiCronMissedSessionsRouteImport.update({
@@ -25,27 +31,31 @@ const ApiCronMissedSessionsRoute = ApiCronMissedSessionsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/support/$token': typeof SupportTokenRoute
   '/api/cron/missed-sessions': typeof ApiCronMissedSessionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/support/$token': typeof SupportTokenRoute
   '/api/cron/missed-sessions': typeof ApiCronMissedSessionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/support/$token': typeof SupportTokenRoute
   '/api/cron/missed-sessions': typeof ApiCronMissedSessionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/cron/missed-sessions'
+  fullPaths: '/' | '/support/$token' | '/api/cron/missed-sessions'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/cron/missed-sessions'
-  id: '__root__' | '/' | '/api/cron/missed-sessions'
+  to: '/' | '/support/$token' | '/api/cron/missed-sessions'
+  id: '__root__' | '/' | '/support/$token' | '/api/cron/missed-sessions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SupportTokenRoute: typeof SupportTokenRoute
   ApiCronMissedSessionsRoute: typeof ApiCronMissedSessionsRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support/$token': {
+      id: '/support/$token'
+      path: '/support/$token'
+      fullPath: '/support/$token'
+      preLoaderRoute: typeof SupportTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/cron/missed-sessions': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SupportTokenRoute: SupportTokenRoute,
   ApiCronMissedSessionsRoute: ApiCronMissedSessionsRoute,
 }
 export const routeTree = rootRouteImport

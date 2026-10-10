@@ -30,8 +30,12 @@ export function missedStreak(
   checkins: Checkin[],
   today = new Date(),
 ): MissedStreak {
-  const completedDays = new Set(completions.filter((c) => c.status === "complete").map((c) => c.day));
-  const honestDays = new Set(checkins.filter((c) => c.status === "rest" || c.status === "unable").map((c) => c.day));
+  const completedDays = new Set(
+    completions.filter((c) => c.status === "complete").map((c) => c.day),
+  );
+  const honestDays = new Set(
+    checkins.filter((c) => c.status === "rest" || c.status === "unable").map((c) => c.day),
+  );
 
   let days = 0;
   let startDay: string | null = null;
@@ -80,6 +84,32 @@ export function buildAlertMessage(opts: {
     `A little support goes a long way 🌱\n\n` +
     `Call them or set up a session together: ${supportUrl}`
   );
+}
+
+/** Support links stop working after this many days. */
+export const SUPPORT_LINK_TTL_DAYS = 14;
+/** Max shared sessions a contact can propose from one alert (stops spam). */
+export const MAX_PROPOSALS_PER_ALERT = 5;
+export const MAX_NOTE_LENGTH = 300;
+
+export function isLinkExpired(alertCreatedAt: string, now = new Date()) {
+  return now.getTime() - new Date(alertCreatedAt).getTime() > SUPPORT_LINK_TTL_DAYS * 86_400_000;
+}
+
+/** Returns an error message, or null if the proposed session time is acceptable. */
+export function validateProposal(
+  proposedForIso: string,
+  note: string,
+  now = new Date(),
+): string | null {
+  const when = new Date(proposedForIso);
+  if (Number.isNaN(when.getTime())) return "Please pick a valid date and time.";
+  if (when.getTime() < now.getTime() + 15 * 60_000)
+    return "Please pick a time at least 15 minutes from now.";
+  if (when.getTime() > now.getTime() + 60 * 86_400_000)
+    return "Please pick a date within the next 60 days.";
+  if (note.length > MAX_NOTE_LENGTH) return `Notes can be up to ${MAX_NOTE_LENGTH} characters.`;
+  return null;
 }
 
 /** Keep only digits and a leading +, so it works in tel: links and SMS providers. */

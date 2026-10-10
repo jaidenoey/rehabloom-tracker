@@ -17,7 +17,10 @@ export const Route = createFileRoute("/api/cron/missed-sessions")({
           return Response.json({ ok: true, ...summary });
         } catch (e) {
           console.error("[alerts] job failed", e);
-          return Response.json({ ok: false, error: e instanceof Error ? e.message : String(e) }, { status: 500 });
+          return Response.json(
+            { ok: false, error: e instanceof Error ? e.message : String(e) },
+            { status: 500 },
+          );
         }
       },
     },

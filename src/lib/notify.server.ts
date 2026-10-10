@@ -26,7 +26,11 @@ export async function sendSms(to: string, body: string): Promise<SendResult> {
       },
       body: new URLSearchParams({ To: to, From: from, Body: body }),
     });
-    if (!res.ok) return { status: "failed", error: `Twilio ${res.status}: ${(await res.text()).slice(0, 300)}` };
+    if (!res.ok)
+      return {
+        status: "failed",
+        error: `Twilio ${res.status}: ${(await res.text()).slice(0, 300)}`,
+      };
     return { status: "sent" };
   } catch (e) {
     return { status: "failed", error: e instanceof Error ? e.message : String(e) };

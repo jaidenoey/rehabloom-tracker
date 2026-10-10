@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { missedStreak, shouldAlert, buildAlertMessage, normalizePhone, displayName } from "@/lib/alerts";
+import {
+  missedStreak,
+  shouldAlert,
+  buildAlertMessage,
+  normalizePhone,
+  displayName,
+  isLinkExpired,
+  validateProposal,
+} from "@/lib/alerts";
 
 // Saturday 10 Oct 2026, local noon to avoid timezone edge cases.
 const today = new Date(2026, 9, 10, 12);
@@ -19,7 +27,15 @@ describe("missed-session alerts", () => {
   });
 
   it("skipped exercises still count as missed", () => {
-    const s = missedStreak([daily], [{ day: "2026-10-09", status: "skip" }, { day: "2026-10-08", status: "complete" }], [], today);
+    const s = missedStreak(
+      [daily],
+      [
+        { day: "2026-10-09", status: "skip" },
+        { day: "2026-10-08", status: "complete" },
+      ],
+      [],
+      today,
+    );
     expect(s.days).toBe(1);
   });
 
@@ -31,7 +47,12 @@ describe("missed-session alerts", () => {
 
   it("ignores days with nothing scheduled", () => {
     // Weekly exercise on Mondays (1) and Thursdays (4): Thu 8 Oct and Mon 5 Oct missed, Thu 1 Oct done.
-    const weekly = { frequency: "weekly", occurrences: 1, days: [1, 4], created_at: "2026-09-01T00:00:00Z" };
+    const weekly = {
+      frequency: "weekly",
+      occurrences: 1,
+      days: [1, 4],
+      created_at: "2026-09-01T00:00:00Z",
+    };
     const s = missedStreak([weekly], [{ day: "2026-10-01", status: "complete" }], [], today);
     expect(s).toEqual({ days: 2, startDay: "2026-10-05" });
   });
@@ -42,11 +63,29 @@ describe("missed-session alerts", () => {
   });
 
   it("message has no medical details and includes the support link", () => {
-    const msg = buildAlertMessage({ patientName: "Ana", contactName: "Luis", missedDays: 3, supportUrl: "https://x.app/support/abc" });
+    const msg = buildAlertMessage({
+      patientName: "Ana",
+      contactName: "Luis",
+      missedDays: 3,
+      supportUrl: "https://x.app/support/abc",
+    });
     expect(msg).toContain("Ana");
     expect(msg).toContain("3 days");
     expect(msg).toContain("https://x.app/support/abc");
     expect(msg.toLowerCase()).not.toContain("pain");
+  });
+
+  it("support links expire after 14 days", () => {
+    expect(isLinkExpired("2026-09-30T12:00:00", today)).toBe(false);
+    expect(isLinkExpired("2026-09-25T12:00:00", today)).toBe(true);
+  });
+
+  it("validates proposed shared sessions", () => {
+    expect(validateProposal("2026-10-11T18:00:00", "", today)).toBeNull();
+    expect(validateProposal("2026-10-10T12:05:00", "", today)).toMatch(/15 minutes/);
+    expect(validateProposal("2027-01-10T18:00:00", "", today)).toMatch(/60 days/);
+    expect(validateProposal("not a date", "", today)).toMatch(/valid date/);
+    expect(validateProposal("2026-10-11T18:00:00", "x".repeat(301), today)).toMatch(/300/);
   });
 
   it("normalizes phone numbers and names", () => {

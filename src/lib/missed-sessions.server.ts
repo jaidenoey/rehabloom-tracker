@@ -3,7 +3,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { dayKey } from "@/lib/rehab";
-import { buildAlertMessage, displayName, missedStreak, normalizePhone, shouldAlert } from "@/lib/alerts";
+import {
+  buildAlertMessage,
+  displayName,
+  missedStreak,
+  normalizePhone,
+  shouldAlert,
+} from "@/lib/alerts";
 import { sendSms } from "@/lib/notify.server";
 
 /**
@@ -11,7 +17,13 @@ import { sendSms } from "@/lib/notify.server";
  *   user_id (patient), id, name, phone, notify_on_missed
  * Keep these names in sync with her migration.
  */
-type SupportContact = { id: string; user_id: string; name: string; phone: string; notify_on_missed: boolean };
+type SupportContact = {
+  id: string;
+  user_id: string;
+  name: string;
+  phone: string;
+  notify_on_missed: boolean;
+};
 
 type Row = Record<string, unknown>;
 const groupBy = <T extends Row>(rows: T[], key: keyof T) => {
@@ -23,7 +35,12 @@ const groupBy = <T extends Row>(rows: T[], key: keyof T) => {
   return out;
 };
 
-export type JobSummary = { patientsChecked: number; patientsAlerted: number; messages: number; skippedDuplicates: number };
+export type JobSummary = {
+  patientsChecked: number;
+  patientsAlerted: number;
+  messages: number;
+  skippedDuplicates: number;
+};
 
 export async function runMissedSessionJob(appUrl: string, today = new Date()): Promise<JobSummary> {
   // The new tables are not in the generated types until Lovable regenerates them.
@@ -36,7 +53,10 @@ export async function runMissedSessionJob(appUrl: string, today = new Date()): P
     db.from("exercises").select("user_id, frequency, occurrences, days, created_at"),
     db.from("completions").select("user_id, day, status").gte("day", sinceKey),
     db.from("checkins").select("user_id, day, status").gte("day", sinceKey),
-    db.from("support_contacts").select("id, user_id, name, phone, notify_on_missed").eq("notify_on_missed", true),
+    db
+      .from("support_contacts")
+      .select("id, user_id, name, phone, notify_on_missed")
+      .eq("notify_on_missed", true),
   ]);
   for (const r of [ex, comp, chk, contacts]) if (r.error) throw new Error(r.error.message);
 
@@ -45,7 +65,12 @@ export async function runMissedSessionJob(appUrl: string, today = new Date()): P
   const checkinsBy = groupBy(chk.data ?? [], "user_id");
   const contactsBy = groupBy((contacts.data ?? []) as SupportContact[], "user_id");
 
-  const summary: JobSummary = { patientsChecked: 0, patientsAlerted: 0, messages: 0, skippedDuplicates: 0 };
+  const summary: JobSummary = {
+    patientsChecked: 0,
+    patientsAlerted: 0,
+    messages: 0,
+    skippedDuplicates: 0,
+  };
 
   for (const [patientId, patientContacts] of contactsBy) {
     summary.patientsChecked++;
@@ -91,7 +116,10 @@ export async function runMissedSessionJob(appUrl: string, today = new Date()): P
         supportUrl: `${appUrl}/support/${alert.token}`,
       });
       const result = await sendSms(phone, body);
-      await db.from("alert_events").update({ delivery_status: result.status, error: result.error ?? "" }).eq("id", alert.id);
+      await db
+        .from("alert_events")
+        .update({ delivery_status: result.status, error: result.error ?? "" })
+        .eq("id", alert.id);
       summary.messages++;
       alerted = true;
     }

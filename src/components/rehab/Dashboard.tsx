@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
+import { SupportAlertsPanel } from "@/components/alerts/SupportAlertsPanel";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { computeXp, stageFor, dayKey, lastNDays, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, longDate, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
@@ -173,6 +174,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
         <HistoryCard exercises={exercises} completions={completed} checkins={checkins} />
         <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} onTrack={track} onChange={load} />
         {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
+        <SupportAlertsPanel userId={userId} />
       </div>
     </div>
   );
