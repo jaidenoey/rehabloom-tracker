@@ -5,17 +5,17 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { dayKey } from "@/lib/rehab";
 import {
   buildAlertMessage,
+  contactPhone,
   displayName,
   missedStreak,
-  normalizePhone,
   shouldAlert,
 } from "@/lib/alerts";
 import { sendSms } from "@/lib/notify.server";
 
 /**
- * Contract with Ines's network feature. Her `support_contacts` table must expose at least:
- *   user_id (patient), id, name, phone, notify_on_missed
- * Keep these names in sync with her migration.
+ * Rows of support_contacts (see migration 0004). Contacts who are Rehabloom users
+ * (buddies, mentors, people who joined with an invite code) have connected_user_id set
+ * and usually no phone here: we use the phone they saved in support_profiles instead.
  */
 type SupportContact = {
   id: string;
@@ -23,6 +23,7 @@ type SupportContact = {
   name: string;
   phone: string;
   notify_on_missed: boolean;
+  connected_user_id: string | null;
 };
 
 type Row = Record<string, unknown>;
@@ -55,10 +56,27 @@ export async function runMissedSessionJob(appUrl: string, today = new Date()): P
     db.from("checkins").select("user_id, day, status").gte("day", sinceKey),
     db
       .from("support_contacts")
-      .select("id, user_id, name, phone, notify_on_missed")
+      .select("id, user_id, name, phone, notify_on_missed, connected_user_id")
       .eq("notify_on_missed", true),
   ]);
   for (const r of [ex, comp, chk, contacts]) if (r.error) throw new Error(r.error.message);
+
+  const [profiles, names] = await Promise.all([
+    db.from("support_profiles").select("user_id, phone"),
+    db.from("network_profiles").select("user_id, display_name"),
+  ]);
+  const phonesByUser = new Map(
+    ((profiles.data ?? []) as { user_id: string; phone: string }[]).map((p) => [
+      p.user_id,
+      p.phone,
+    ]),
+  );
+  const namesByUser = new Map(
+    ((names.data ?? []) as { user_id: string; display_name: string }[]).map((p) => [
+      p.user_id,
+      p.display_name,
+    ]),
+  );
 
   const exercisesBy = groupBy(ex.data ?? [], "user_id");
   const completionsBy = groupBy(comp.data ?? [], "user_id");
@@ -84,13 +102,16 @@ export async function runMissedSessionJob(appUrl: string, today = new Date()): P
 
     const { data: userData } = await supabaseAdmin.auth.admin.getUserById(patientId);
     const meta = userData.user?.user_metadata as { full_name?: string; name?: string } | undefined;
-    const patientName = displayName(meta?.full_name ?? meta?.name, userData.user?.email);
+    const patientName = displayName(
+      namesByUser.get(patientId) || meta?.full_name || meta?.name,
+      userData.user?.email,
+    );
     let alerted = false;
 
     for (const contact of patientContacts) {
       // Reserve the alert first: the unique (patient, contact, streak_start) stops duplicates
       // if the job runs twice, and gives us the token for the contact's link.
-      const phone = normalizePhone(contact.phone ?? "");
+      const phone = contactPhone(contact, phonesByUser);
       const { data: alert, error } = await db
         .from("alert_events")
         .insert({

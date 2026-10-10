@@ -119,3 +119,18 @@ export function normalizePhone(raw: string) {
   if (!digits) return "";
   return trimmed.startsWith("+") ? `+${digits}` : digits;
 }
+
+/**
+ * Number to text for a support contact: the one saved on the contact, or — for contacts
+ * who are Rehabloom users (buddies, mentors) — the phone they saved in their own profile.
+ */
+export function contactPhone(
+  contact: { phone?: string | null; connected_user_id?: string | null },
+  phonesByUser: Map<string, string>,
+) {
+  const own = normalizePhone(contact.phone ?? "");
+  if (own) return own;
+  return contact.connected_user_id
+    ? normalizePhone(phonesByUser.get(contact.connected_user_id) ?? "")
+    : "";
+}

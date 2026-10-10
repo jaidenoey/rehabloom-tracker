@@ -7,6 +7,7 @@ import {
   displayName,
   isLinkExpired,
   validateProposal,
+  contactPhone,
 } from "@/lib/alerts";
 
 // Saturday 10 Oct 2026, local noon to avoid timezone edge cases.
@@ -93,5 +94,21 @@ describe("missed-session alerts", () => {
     expect(normalizePhone("(919) 555-0100")).toBe("9195550100");
     expect(displayName("Ana María López", "a@b.com")).toBe("Ana");
     expect(displayName("", "ana.lopez@b.com")).toBe("ana.lopez");
+  });
+});
+
+describe("contact phone", () => {
+  const phones = new Map([["u-buddy", "+1 919 555 0100"]]);
+  it("uses the phone saved on the contact first", () => {
+    expect(contactPhone({ phone: "+34 600 123 456", connected_user_id: "u-buddy" }, phones)).toBe(
+      "+34600123456",
+    );
+  });
+  it("falls back to the app user's own phone for buddies and mentors", () => {
+    expect(contactPhone({ phone: "", connected_user_id: "u-buddy" }, phones)).toBe("+19195550100");
+  });
+  it("is empty when nobody saved a number", () => {
+    expect(contactPhone({ phone: "", connected_user_id: "u-other" }, phones)).toBe("");
+    expect(contactPhone({ phone: "", connected_user_id: null }, phones)).toBe("");
   });
 });

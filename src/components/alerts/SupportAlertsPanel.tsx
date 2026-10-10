@@ -3,7 +3,8 @@
 // - session invites proposed by contacts, to accept or decline
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CalendarHeart, Check, X } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { CalendarHeart, Check, Users, X } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePhone } from "@/lib/alerts";
@@ -70,6 +71,9 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
         If you miss your sessions for a couple of days, the people in your support network get a
         message so they can call you or do a session with you.
       </p>
+      <Link to="/people" className="btn-aqua mt-3">
+        <Users className="h-4 w-4" /> Your people
+      </Link>
 
       <label className="mt-3 block text-sm font-semibold">
         Your phone (so they can call you)
