@@ -22,6 +22,20 @@
       "when": 1791655406092,
       "tag": "0002_exercise_frequency_occurrences",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791660000000,
+      "tag": "0003_missed_session_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791661000000,
+      "tag": "0004_support_network",
+      "breakpoints": true
     }
   ]
 }
